@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Digital Notice Board</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f4f6f9;
+      color: #333;
+    }
+    header {
+      background: linear-gradient(90deg, #2c3e50, #34495e);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    nav {
+      background: #2c3e50;
+      padding: 10px;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 12px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #f1c40f;
+    }
+    section {
+      padding: 20px;
+      background: white;
+      margin: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    .notice {
+      background: #f9f9f9;
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+    .notice:hover {
+      transform: scale(1.02);
+    }
+    .notice-text {
+      flex-grow: 1;
+    }
+    .timestamp {
+      font-size: 0.8rem;
+      color: #888;
+    }
+    .actions button {
+      margin-left: 5px;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.3s;
+    }
+    .actions button.edit { background: #3498db; color: white; }
+    .actions button.edit:hover { background: #2980b9; }
+    .actions button.delete { background: #e74c3c; color: white; }
+    .actions button.delete:hover { background: #c0392b; }
+
+    /* Admin styles */
+    .admin-panel {
+      display: none;
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px;
+    }
+    .form-control {
+      margin-bottom: 10px;
+    }
+    label { font-weight: bold; display: block; margin-bottom: 5px; }
+    input, select, button {
+      padding: 8px;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button.add-btn {
+      background: #27ae60;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.add-btn:hover { background: #1e8449; }
+
+    #loginBox {
+      text-align: center;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>📢 Community Digital Notice Board</header>
+
+  <nav>
+    <a href="#announcements">📢 Announcements</a>
+    <a href="#events">🎉 Events</a>
+    <a href="#market">🛒 Buy/Sell</a>
+    <a href="#contacts">📞 Contacts</a>
+  </nav>
+
+  <!-- Sections -->
+  <section id="announcements">
+    <h2>📢 Announcements</h2>
+    <ul id="announcementsList"></ul>
+  </section>
+
+  <section id="events">
+    <h2>🎉 Upcoming Events</h2>
+    <ul id="eventsList"></ul>
+  </section>
+
+  <section id="market">
+    <h2>🛒 Buy / Sell / Rent</h2>
+    <ul id="marketList"></ul>
+  </section>
+
+  <section id="contacts">
+    <h2>📞 Important Contacts</h2>
+    <ul id="contactsList"></ul>
+  </section>
+
+  <!-- Admin Login -->
+  <div id="loginBox">
+    <input type="password" id="adminPass" placeholder="Enter Admin Password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="admin-panel" id="adminPanel">
+    <h2>🔧 Admin Panel</h2>
+    <div class="form-control">
+      <label for="section">Select Section:</label>
+      <select id="section">
+        <option value="announcements">Announcements</option>
+        <option value="events">Events</option>
+        <option value="market">Buy / Sell / Rent</option>
+        <option value="contacts">Contacts</option>
+      </select>
+    </div>
+    <div class="form-control">
+      <label for="content">Notice Text:</label>
+      <input type="text" id="content" placeholder="Enter notice details">
+    </div>
+    <button class="add-btn" onclick="addNotice()">➕ Add Notice</button>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = "admin123"; // 🔑 change password
+    let data = JSON.parse(localStorage.getItem("noticeBoard")) || {
+      announcements: [],
+      events: [],
+      market: [],
+      contacts: []
+    };
+
+    function render() {
+      ["announcements", "events", "market", "contacts"].forEach(section => {
+        const ul = document.getElementById(section + "List");
+        ul.innerHTML = "";
+        data[section].forEach((item, index) => {
+          let li = document.createElement("li");
+          li.className = "notice";
+
+          let div = document.createElement("div");
+          div.className = "notice-text";
+          div.innerHTML = `<div>${item.text}</div>
+                           <div class="timestamp">📅 ${item.time}</div>`;
+
+          let actions = document.createElement("div");
+          actions.className = "actions";
+          let editBtn = document.createElement("button");
+          editBtn.className = "edit";
+          editBtn.textContent = "Edit";
+          editBtn.onclick = () => editNotice(section, index);
+
+          let delBtn = document.createElement("button");
+          delBtn.className = "delete";
+          delBtn.textContent = "Delete";
+          delBtn.onclick = () => deleteNotice(section, index);
+
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+
+          li.appendChild(div);
+          li.appendChild(actions);
+          ul.appendChild(li);
+        });
+      });
+    }
+
+    function addNotice() {
+      const section = document.getElementById("section").value;
+      const content = document.getElementById("content").value;
+      if (content.trim() === "") return alert("Notice cannot be empty!");
+      const timestamp = new Date().toLocaleString();
+      data[section].push({ text: content, time: timestamp });
+      localStorage.setItem("noticeBoard", JSON.stringify(data));
+      document.getElementById("content").value = "";
+      render();
+    }
+
+    function deleteNotice(section, index) {
+      if (confirm("Delete this notice?")) {
+        data[section].splice(index, 1);
+        localStorage.setItem("noticeBoard", JSON.stringify(data));
+        render();
+      }
+    }
+
+    function editNotice(section, index) {
+      const newText = prompt("Edit notice:", data[section][index].text);
+      if (newText && newText.trim() !== "") {
+        data[section][index].text = newText;
+        data[section][index].time = new Date().toLocaleString() + " (edited)";
+        localStorage.setItem("noticeBoard", JSON.stringify(data));
+        render();
+      }
+    }
+
+    function login() {
+      const pass = document.getElementById("adminPass").value;
+      if (pass === ADMIN_PASSWORD) {
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("loginBox").style.display = "none";
+      } else {
+        alert("Incorrect password!");
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
